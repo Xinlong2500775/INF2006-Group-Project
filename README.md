@@ -61,3 +61,7 @@ data/
 - CloudWatch monitoring/alarms
 - Security test, scalability test, data/AI validation test (required evidence)
 - Photo upload (optional stretch feature, would need S3)
+=======
+# INF2006-Group-Project
+Lost and Found Webpage
+
