@@ -1,0 +1,4 @@
+src/inc/dbinfo.inc.php
+*.pyc
+__pycache__/
+.DS_Store
