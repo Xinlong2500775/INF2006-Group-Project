@@ -16,9 +16,14 @@ $total_reports = count($items);
 $lost_count = count(array_filter($items, fn($i) => $i['type'] === 'lost'));
 $found_count = count(array_filter($items, fn($i) => $i['type'] === 'found'));
 
+// Filter for "Your reports" list — driven by clicking the Lost/Found stat tiles
+$filter = $_GET['filter'] ?? null;
+$display_items = $filter ? array_filter($items, fn($i) => $i['type'] === $filter) : $items;
+
 // Real "possible matches" count: run the matching script against every
-// open lost item this user reported, count found items scoring above 20%
-// (filters out weak, coincidental overlaps like sharing just one word).
+// open lost item this user reported, and count how many found items
+// score above 20% (filters out weak, coincidental word overlaps like
+// two items only sharing the word "black").
 $match_count = 0;
 $first_matched_item_id = null;
 foreach ($items as $item) {
@@ -31,8 +36,8 @@ foreach ($items as $item) {
     }
 }
 
-// Pending claims relevant to this user: claims THEY made awaiting review,
-// and claims OTHERS made on found items THEY reported.
+// Pending claims relevant to this user: claims THEY made that are still
+// awaiting review, and claims OTHERS made on found items THEY reported.
 $stmt = mysqli_prepare($conn, "SELECT COUNT(*) AS c FROM claims WHERE claimed_by = ? AND status = 'pending'");
 mysqli_stmt_bind_param($stmt, "i", $uid);
 mysqli_stmt_execute($stmt);
@@ -55,13 +60,7 @@ $pending_total = $my_pending_claims + $claims_on_my_items;
 <?php include 'nav.php'; ?>
 <div class="wrap">
     <h1>Welcome back, <?= htmlentities($_SESSION['name']) ?></h1>
-    <p>
-        <?php if (isset($_GET['claimed'])): ?>
-            Claim submitted — an admin will review it and confirm the handover.
-        <?php else: ?>
-            Here's what's happening with your reports.
-        <?php endif; ?>
-    </p>
+    <p>Here's what's happening with your reports.</p>
 
     <div class="stats">
         <div class="stat">
@@ -69,16 +68,20 @@ $pending_total = $my_pending_claims + $claims_on_my_items;
             <div class="stat-num"><?= $total_reports ?></div>
             <div class="stat-label">Total reports</div>
         </div>
-        <div class="stat">
+        <a href="dashboard.php?filter=lost" style="text-decoration:none; color:inherit;">
+        <div class="stat" style="cursor:pointer;">
             <div class="stat-icon" style="background:var(--lost-soft); color:var(--lost);">🔍</div>
             <div class="stat-num"><?= $lost_count ?></div>
             <div class="stat-label">Lost items</div>
         </div>
-        <div class="stat">
+        </a>
+        <a href="dashboard.php?filter=found" style="text-decoration:none; color:inherit;">
+        <div class="stat" style="cursor:pointer;">
             <div class="stat-icon" style="background:var(--found-soft); color:var(--found);">📦</div>
             <div class="stat-num"><?= $found_count ?></div>
             <div class="stat-label">Found items</div>
         </div>
+        </a>
         <?php if ($match_count > 0 && $first_matched_item_id): ?>
         <a href="matches.php?item_id=<?= $first_matched_item_id ?>" style="text-decoration:none; color:inherit;">
         <?php endif; ?>
@@ -90,11 +93,17 @@ $pending_total = $my_pending_claims + $claims_on_my_items;
         <?php if ($match_count > 0 && $first_matched_item_id): ?>
         </a>
         <?php endif; ?>
-        <div class="stat">
+        <?php if ($pending_total > 0): ?>
+        <a href="my_claims.php" style="text-decoration:none; color:inherit;">
+        <?php endif; ?>
+        <div class="stat" <?= $pending_total > 0 ? 'style="cursor:pointer;"' : '' ?>>
             <div class="stat-icon" style="background:#fef2f2; color:#dc2626;">⏳</div>
             <div class="stat-num"><?= $pending_total ?></div>
             <div class="stat-label">Pending claims</div>
         </div>
+        <?php if ($pending_total > 0): ?>
+        </a>
+        <?php endif; ?>
     </div>
 
     <div class="section-title">Quick actions</div>
@@ -116,7 +125,12 @@ $pending_total = $my_pending_claims + $claims_on_my_items;
         </a>
     </div>
 
-    <div class="section-title">Your reports</div>
+    <div class="section-title" style="display:flex; align-items:center; justify-content:space-between;">
+        <span>Your reports<?php if ($filter): ?> — <?= htmlentities(ucfirst($filter)) ?> only<?php endif; ?></span>
+        <?php if ($filter): ?>
+            <a href="dashboard.php" style="font-size:13px; font-weight:600;">Show all</a>
+        <?php endif; ?>
+    </div>
     <?php if ($total_reports === 0): ?>
         <div class="item-card" style="text-align:center; padding:40px 28px;">
             <strong>Nothing here yet</strong>
@@ -124,12 +138,16 @@ $pending_total = $my_pending_claims + $claims_on_my_items;
             <a href="report_lost.php" class="btn-primary" style="text-decoration:none; display:inline-block;">Report a lost item</a>
             <a href="report_found.php" class="btn-secondary" style="text-decoration:none; display:inline-block; margin-left:10px;">Report a found item</a>
         </div>
+    <?php elseif (empty($display_items)): ?>
+        <div class="item-card" style="text-align:center; padding:40px 28px;">
+            <div class="meta">No <?= htmlentities($filter) ?> items in your reports.</div>
+        </div>
     <?php endif; ?>
-    <?php foreach ($items as $item): ?>
-        <div class="item-card"<?= $item['status'] === 'matched' ? ' style="border-color:var(--orange); border-width:2px;"' : '' ?>>
+    <?php foreach ($display_items as $item): ?>
+        <div class="item-card"<?= ($item['status'] === 'matched' || $item['status'] === 'claimed') ? ' style="border-color:var(--green); border-width:2px;"' : '' ?>>
             <span class="badge badge-<?= $item['type'] ?>"><?= strtoupper($item['type']) ?></span>
-            <?php if ($item['status'] === 'matched'): ?>
-                <span class="badge" style="background:var(--orange-soft); color:var(--orange);">NEEDS YOUR ATTENTION</span>
+            <?php if ($item['status'] === 'matched' || $item['status'] === 'claimed'): ?>
+                <span class="badge" style="background:var(--green-soft); color:var(--green);">RESOLVED</span>
             <?php endif; ?>
             <strong><?= htmlentities($item['category']) ?></strong> — <?= htmlentities($item['description']) ?>
             <div class="meta">
@@ -137,7 +155,7 @@ $pending_total = $my_pending_claims + $claims_on_my_items;
                 Date: <?= htmlentities($item['item_date']) ?> |
                 Status: <?= htmlentities($item['status']) ?>
             </div>
-            <?php if ($item['type'] === 'lost'): ?>
+            <?php if ($item['type'] === 'lost' && $item['status'] === 'open'): ?>
                 <a href="matches.php?item_id=<?= $item['item_id'] ?>">View possible matches →</a>
             <?php endif; ?>
         </div>

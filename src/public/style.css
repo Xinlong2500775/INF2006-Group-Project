@@ -75,6 +75,12 @@ nav a {
 nav a:hover {
     color: var(--primary);
 }
+nav a.active {
+    color: var(--primary);
+    background: var(--primary-soft);
+    padding: 6px 12px;
+    border-radius: 8px;
+}
 nav > span {
     margin-left: auto;
 }

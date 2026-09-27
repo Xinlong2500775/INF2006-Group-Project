@@ -8,7 +8,7 @@ $item_id = intval($_GET['item_id'] ?? 0);
 $conn = get_db_connection();
 
 $uid = current_user_id();
-$stmt = mysqli_prepare($conn, "SELECT * FROM items WHERE item_id = ? AND reported_by = ? AND type = 'lost'");
+$stmt = mysqli_prepare($conn, "SELECT * FROM items WHERE item_id = ? AND reported_by = ? AND type = 'lost' AND status = 'open'");
 mysqli_stmt_bind_param($stmt, "ii", $item_id, $uid);
 mysqli_stmt_execute($stmt);
 $lost_item = mysqli_stmt_get_result($stmt)->fetch_assoc();
@@ -49,6 +49,8 @@ $matches = find_matches_for_lost_item($conn, $lost_item, 0.2);
             <form method="POST" action="claim.php" style="margin-top:8px;">
                 <input type="hidden" name="found_item_id" value="<?= $m['item_id'] ?>">
                 <input type="hidden" name="lost_item_id" value="<?= $lost_item['item_id'] ?>">
+                <label style="margin-top:10px;">Prove it's yours</label>
+                <textarea name="verification_answer" rows="2" placeholder="Describe something about this item that wasn't shown above (a mark, a sticker, what's inside it, etc.) — Security will check this against the finder's report." required></textarea>
                 <button type="submit">This is mine, claim it</button>
             </form>
         </div>

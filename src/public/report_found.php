@@ -9,13 +9,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $description = trim($_POST['description']);
     $location = trim($_POST['location']);
     $item_date = $_POST['item_date'];
+    $private_detail = trim($_POST['private_detail']); 
 
-    if ($category && $description && $location && $item_date) {
+    if ($category && $description && $location && $item_date && $private_detail) { 
         $conn = get_db_connection();
         $uid = current_user_id();
         $stmt = mysqli_prepare($conn,
-            "INSERT INTO items (reported_by, type, category, description, location, item_date) VALUES (?, 'found', ?, ?, ?, ?)");
-        mysqli_stmt_bind_param($stmt, "issss", $uid, $category, $description, $location, $item_date);
+            "INSERT INTO items (reported_by, type, category, description, location, item_date, private_detail) VALUES (?, 'found', ?, ?, ?, ?, ?)");
+        mysqli_stmt_bind_param($stmt, "isssss", $uid, $category, $description, $location, $item_date, $private_detail); 
         mysqli_stmt_execute($stmt);
         header('Location: report_found_success.php');
         exit;
@@ -54,6 +55,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <input type="text" name="location" placeholder="e.g. W3 Lobby" required>
         <label>Date found</label>
         <input type="date" name="item_date" required>
+        <label>Private distinguishing detail</label>
+        <textarea name="private_detail" rows="2" placeholder="Something NOT in your description above — e.g. a scratch, a name written inside, a sticker on the underside. Only Security will see this, and it's used to check that a claimant really owns the item." required></textarea>
         <button type="submit">Submit report</button>
     </form>
 </div>
