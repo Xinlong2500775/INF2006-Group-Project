@@ -1,4 +1,3 @@
-
 # Lost & Found Tracker — INF2006 Team Project
 
 A web app for reporting, browsing, and matching lost/found campus items, with automatic
@@ -11,16 +10,27 @@ check on a lost item) has no online visibility, no searchable inventory, and no 
 proactively match lost reports against found items. This app lets students report lost or
 found items online, browse found items, and get automatically ranked possible matches.
 
+
 ## Structure
+
+```
 src/
-public/ — PHP pages (login, register, report forms, browse, matches, claim)
-inc/ — shared PHP includes (db connection, auth helpers)
+  public/       — PHP pages (login, register, report forms, browse, matches, claim, admin)
+  inc/          — shared PHP includes (db connection, auth helpers)
 analytics/
-match_items.py — TF-IDF/cosine similarity matching script
-requirements.txt
-README.md — how the matching feature works, reproducibility notes
+  match_items.py    — TF-IDF/cosine similarity matching script (used live by the app)
+  match.py          — offline evaluation script (used for reproducibility/evidence testing)
+  requirements.txt
+  README.md         — how the matching feature works, reproducibility notes
 data/
-schema.sql — database schema (users, items, claims)
+  schema.sql            — database schema (users, items, claims)
+  DATA_DICTIONARY.md    — field-level documentation of the dataset
+  generate_dataset.py   — script to generate synthetic test data
+  ground_truth.csv, lost_items.csv, found_items.csv — test datasets
+evidence/
+  test-data-ai.md, test-data-ai-output.csv — AI/matching validation evidence
+```
+
 
 ## Quickstart (deploying to EC2, same pattern as Lab 4)
 
@@ -47,15 +57,22 @@ schema.sql — database schema (users, items, claims)
 ## What's built so far
 
 - User registration/login (bcrypt password hashing)
-- Report lost item / report found item
-- Browse open found items
+- Report lost item / report found item, with a private distinguishing detail captured on
+  found-item reports (hidden from public browsing, used later for claim verification)
+- Browse found items, with filters (category, location, date, keyword search)
 - Automatic match suggestions (TF-IDF + cosine similarity) after reporting a lost item
-- Claim flow (student claims a found item)
+- Claim flow with human-in-the-loop verification:
+  - Claimant answers a verification question instead of instantly taking ownership
+  - Claim sits as `pending` — no item status changes yet
+  - Admin panel for Security staff to compare the claimant's answer against the finder's
+    private detail, and approve or reject
+  - Approving a claim auto-rejects any other pending claims on the same found item
+- My Claims page — students can track claims they've submitted and claims made on their finds
+- Dashboard with clickable stat tiles (lost/found counts, pending claims, possible matches)
 
 ## Not yet built (next steps)
 
-- Admin panel (approve/reject claims, mark items returned/discarded)
 - Deployment to EC2 + ALB + Auto Scaling Group (Lab 3 pattern)
 - CloudWatch monitoring/alarms
-- Security test, scalability test, data/AI validation test (required evidence)
+- Scalability test (required evidence)
 - Photo upload (optional stretch feature, would need S3)
