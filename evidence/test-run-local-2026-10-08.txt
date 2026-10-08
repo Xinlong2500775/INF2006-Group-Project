@@ -1,0 +1,45 @@
+Campus Lost & Found automated tests
+Target: http://localhost/INF2006-app/src/public
+Run:    2026-10-08T19:31:23  (run id 20261008193123)
+
+== Functional workflow (evidence/test-functional.md) ==
+[PASS] F01  Register a new student  (http://localhost/INF2006-app/src/public/login.php?registered=1)
+[PASS] F02  Weak password rejected
+[PASS] F03  Duplicate email rejected
+[PASS] F04  Log in as Student A  (http://localhost/INF2006-app/src/public/dashboard.php)
+[PASS] F05  Wrong password rejected
+[PASS] F06  Student B reports a found item  (http://localhost/INF2006-app/src/public/report_found_success.php)
+[PASS] F07  Found item visible in Browse
+[PASS] F08  Browse filters narrow the results
+[PASS] F09  Lost report shows the found item as a match with a %  (lost_id=16, found_id=15, scores=['81', '32'])
+[PASS] F10  Student A submits a claim (PENDING)  (http://localhost/INF2006-app/src/public/claim_success.php)
+[PASS] F11  Finder sees the claim on their item
+[PASS] F12  Admin sees claim with private detail side by side
+[PASS] F13  Admin approves the claim  (claim_id=10)
+[PASS] F14  Claimant sees APPROVED
+[PASS] F15  Approved found item no longer listed in Browse
+[PASS] F16  Rejected claim shows REJECTED, item stays in Browse  (claim_id=11)
+[PASS] F17  After logout, protected pages redirect to login
+
+== Security controls (evidence/test-security.md) ==
+[PASS] S01  A cannot view B's matches via URL (matches.php?item_id=B_LOST)
+[PASS] S02  A cannot open a found item as a lost report
+[PASS] S03  Invalid IDs give a clean 'Item not found', no errors leaked
+[PASS] S04  Dashboard filter tampering shows no other user's items
+[PASS] S05  Claim with someone else's lost_item_id is refused
+[PASS] S06  Claim on an already-matched item is refused
+[PASS] S07  Claim with empty verification answer is refused
+[PASS] S08  Every protected page redirects anonymous users to login  (7/7 redirected)
+[PASS] S09  Student opening admin.php is denied
+[PASS] S10  Student POSTing an admin approve is denied, claim unchanged  (claim_id=12)
+[PASS] S11  Finder's private detail never shown to students  (checked 4 pages)
+[PASS] S12  Same error for wrong password and unknown email
+[PASS] S13  SQL injection in login fails
+[PASS] S14  SQL injection in browse search is treated as text
+[PASS] S15  Stored XSS payload is escaped, not executed
+[PASS] S16  Weak password rejected by the server (not just the browser)
+
+S17 (password hashing) and S18 (no credentials in repo) are not HTTP checks:
+see tests/check_password_hashes.sql and tests/check_secrets.py.
+
+SUMMARY: 33/33 checks passed, 0 failed

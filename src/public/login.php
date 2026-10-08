@@ -4,23 +4,27 @@ require_once __DIR__ . '/../inc/auth.php';
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = trim($_POST['email']);
-    $password = $_POST['password'];
+    $email = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
 
     $conn = get_db_connection();
-    $email_esc = mysqli_real_escape_string($conn, $email);
-    $result = mysqli_query($conn, "SELECT user_id, name, password_hash, role FROM users WHERE email = '$email_esc'");
 
-    if ($row = mysqli_fetch_assoc($result)) {
-        if (password_verify($password, $row['password_hash'])) {
-            $_SESSION['user_id'] = $row['user_id'];
-            $_SESSION['name'] = $row['name'];
-            $_SESSION['role'] = $row['role'];
-            header('Location: dashboard.php');
-            exit;
-        } else {
-            $error = "Incorrect email or password.";
-        }
+    // Prepared statement, consistent with the rest of the app
+    $stmt = mysqli_prepare($conn, "SELECT user_id, name, password_hash, role FROM users WHERE email = ?");
+    mysqli_stmt_bind_param($stmt, "s", $email);
+    mysqli_stmt_execute($stmt);
+    $row = mysqli_stmt_get_result($stmt)->fetch_assoc();
+
+    // Same message whether the email or the password is wrong,
+    // so attackers can't tell which emails are registered
+    if ($row && password_verify($password, $row['password_hash'])) {
+        // New session ID on login, protects against session fixation
+        session_regenerate_id(true);
+        $_SESSION['user_id'] = $row['user_id'];
+        $_SESSION['name'] = $row['name'];
+        $_SESSION['role'] = $row['role'];
+        header('Location: dashboard.php');
+        exit;
     } else {
         $error = "Incorrect email or password.";
     }

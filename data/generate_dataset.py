@@ -15,8 +15,12 @@ Produces:
     data/ground_truth.csv   (which lost id maps to which found id, if any)
 """
 
-import random
 import csv
+import os
+import random
+
+# Write next to this script, so it works from any folder on any machine
+DATA_DIR = os.path.dirname(os.path.abspath(__file__))
 
 random.seed(42)
 
@@ -145,17 +149,17 @@ for _ in range(N_FOUND_ONLY):
 random.shuffle(lost_rows)
 random.shuffle(found_rows)
 
-with open("/home/claude/project/data/lost_items.csv", "w", newline="") as f:
+with open(os.path.join(DATA_DIR, "lost_items.csv"), "w", newline="") as f:
     writer = csv.DictWriter(f, fieldnames=["id","category","description","location","date_lost","reporter_role"])
     writer.writeheader()
     writer.writerows(lost_rows)
 
-with open("/home/claude/project/data/found_items.csv", "w", newline="") as f:
+with open(os.path.join(DATA_DIR, "found_items.csv"), "w", newline="") as f:
     writer = csv.DictWriter(f, fieldnames=["id","category","description","location","date_found","held_by"])
     writer.writeheader()
     writer.writerows(found_rows)
 
-with open("/home/claude/project/data/ground_truth.csv", "w", newline="") as f:
+with open(os.path.join(DATA_DIR, "ground_truth.csv"), "w", newline="") as f:
     writer = csv.DictWriter(f, fieldnames=["lost_id","found_id"])
     writer.writeheader()
     writer.writerows(ground_truth)

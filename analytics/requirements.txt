@@ -1,1 +1,11 @@
-scikit-learn
+# Python dependencies for analytics/match_items.py (used live by the app)
+# and analytics/match.py (offline evaluation).
+#
+# Version ranges, not exact pins, so the same file installs on Amazon Linux 2023
+# (Python 3.9) and on Windows/macOS with newer Python versions.
+# Verified to give byte-identical evaluation output (evidence/test-data-ai-output.csv) on:
+#   scikit-learn 1.6.1 + pandas 2.2.3 + numpy 2.0.2  (Python 3.9-compatible set)
+#   scikit-learn 1.8.0 + pandas 3.0.2 + numpy 2.4.4
+scikit-learn>=1.3,<2.0
+pandas>=2.0,<4.0
+numpy>=1.24

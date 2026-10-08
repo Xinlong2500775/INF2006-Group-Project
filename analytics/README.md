@@ -1,34 +1,75 @@
-# Analytics: Text-based item matching
+# Analytics: text-based lost/found matching
 
-`match_items.py` compares a lost item's description against all currently open found-item
-descriptions using TF-IDF vectorization + cosine similarity, and returns the top matches
-ranked by similarity score.
+When a student reports a lost item, the app ranks every open found item by how
+similar its report is, and shows the top 5 with a match percentage. This helps
+the owner find their item without scrolling through every notice, and gives
+Security a shortlist instead of manual searching.
 
-## Run it standalone (for testing/reproducibility evidence)
+| File | Purpose |
+|---|---|
+| `match_items.py` | The matcher used **live** by the web app (called from `src/inc/matching.php`). |
+| `match.py` | Offline evaluation of `match_items.py` against the labelled synthetic dataset. Produces `evidence/test-data-ai-output.csv`. |
+| `requirements.txt` | Python dependencies (tested version sets listed inside). |
+
+## Method
+
+1. **Input text:** each report's `category + description + location` joined into one string.
+2. **TF-IDF:** each text becomes a vector of word weights. Words that appear in many reports
+   (like "black") get less weight than rarer, more informative words (like "Hydro"). English
+   stop words are removed.
+3. **Cosine similarity:** the lost report is compared with every open found report, giving a
+   score from 0 (no shared words) to 1 (same wording).
+4. **Output:** the top 5 found items with a score of at least 20% are shown to the student,
+   each with its percentage (e.g. "Match score: 72%").
+
+TF-IDF was chosen because it is fast (no GPU, runs on a t3.micro in milliseconds), needs no
+training data, and every score can be explained by pointing at the shared words.
+
+## Reproduce the evaluation (no AWS needed)
+
+From the repository root:
 
 ```bash
-pip install -r requirements.txt
-python3 match_items.py "Blue Hydro Flask water bottle, dent on side" "Found a blue water bottle near W3 lobby|Grey backpack found near canteen|Black earphones found in LT1"
+pip install -r analytics/requirements.txt
+python3 analytics/match.py
 ```
 
-Expected output (JSON, sorted by score):
-```json
-[{"description": "Found a blue water bottle near W3 lobby", "score": 0.42}]
+Expected output (deterministic, identical on every run):
+
+```
+--- PRODUCTION: category + description + location ---
+Top-1 accuracy:                  34.1%  (29/85)
+Top-3 accuracy:                  65.9%  (56/85)
+Top-5 accuracy:                  89.4%  (76/85)
+No-match items given a suggestion: 100.0%  (20/20)
 ```
 
-## How it's used in the web app
+Full results and interpretation: `evidence/test-data-ai.md`.
+Dataset provenance and fields: `data/README.md`, `data/DATA_DICTIONARY.md`.
 
-`src/public/matches.php` calls this script via PHP's `shell_exec()`, passing the logged-in
-user's lost-item description and the pipe-separated list of open found-item descriptions
-pulled from the `items` table. The script prints JSON to stdout, which PHP decodes and
-displays as ranked match cards.
+## Try the matcher on its own
+
+```bash
+python3 analytics/match_items.py "Bottle/Container lost my blue Hydro Flask bottle W3" "Bottle/Container blue Hydro Flask water bottle with a dent W3 lobby|Bag grey backpack canteen"
+```
+
+Output: `[{"index": 0, "score": 0.7295}]`, where `index` is the position of the found item
+in the `|`-separated list. The backpack shares no words with the lost report, so it scores 0
+and is left out.
 
 ## Limitations
 
-- TF-IDF/cosine similarity is a lexical (word-overlap) technique, not semantic — it won't
-  catch synonyms it hasn't seen together in the corpus (e.g. "bottle" vs "flask" only match
-  if both words co-occur enough across descriptions to be weighted similarly).
-- No spelling-correction or typo tolerance.
-- Photo-based matching was considered as an extension but not implemented in this version
-  due to the added complexity of image embeddings and sample photo data collection within
-  the project timeline.
+- **Always suggests something.** Same-category items share enough words to pass 20%, so a
+  student whose item hasn't been handed in still sees suggestions. Mitigated by human
+  verification before release (claims are checked by Security in `admin.php`).
+- **Lexical, not semantic.** "Flask" and "bottle" are only linked if they appear together in
+  reports. No typo tolerance.
+- **Synthetic evaluation data.** Real reports may be messier; results should be re-checked on
+  anonymised real data before production use.
+- **Photo matching** was considered but not built (needs image storage and embeddings).
+
+## Responsible use
+
+- Suggestions never release an item. A claim must pass Security's manual check against the
+  finder's private detail, which students never see.
+- The matcher only reads item descriptions, never names, emails or student IDs.

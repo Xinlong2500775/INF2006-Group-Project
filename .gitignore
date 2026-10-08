@@ -1,4 +1,15 @@
+# Real credentials: never commit
+src/.env
 src/inc/dbinfo.inc.php
+
+# Python
 *.pyc
 __pycache__/
+.venv/
+
+# Local test output (the dated copies in evidence/ are the ones we submit)
+tests/output/
+
+# OS
 .DS_Store
+Thumbs.db

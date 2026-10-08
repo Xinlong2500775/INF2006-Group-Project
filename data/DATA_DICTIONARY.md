@@ -59,10 +59,56 @@ evaluation, never for training/fitting the vectoriser.
   category. This means two *different* items of the same category (e.g.
   two different black umbrellas) can produce text nearly as similar as a
   *true* lost/found pair. This directly caused the matching engine's
-  precision to be much lower than an initial 4-row pilot suggested (see
-  evidence/test-data-ai.md for the full analysis) — a known, honestly
-  reported limitation of both the dataset and the TF-IDF method.
+  Top-1 accuracy to stay modest (34.1%), even though the correct item is
+  in the top 5 suggestions 89.4% of the time (see
+  evidence/test-data-ai.md for the full analysis). This is a known,
+  honestly reported limitation of both the dataset and the TF-IDF method.
 - Descriptions are template-based rather than freely written, so they
   understate the messiness of real user input (typos, abbreviations) but
   also understate the amount of genuinely distinguishing detail a real
   reporter might include (a scratch, a sticker, a serial number).
+
+
+## Application database (data/schema.sql)
+
+These are the live tables on Amazon RDS (MySQL). The CSV files above are only
+for offline evaluation; they are not loaded into the app database.
+
+### users
+
+| Field | Type | Description |
+|---|---|---|
+| user_id | INT, PK, auto-increment | Internal account ID |
+| name | VARCHAR(100) | Display name shown in the nav bar |
+| email | VARCHAR(100), UNIQUE | Login email; format checked server-side in register.php |
+| password_hash | VARCHAR(255) | bcrypt hash from `password_hash()`. Plain-text passwords are never stored |
+| role | ENUM('student','admin') | `student` for self-registered users; `admin` for Security staff (only set directly in the database) |
+| created_at | DATETIME | When the account was created |
+
+### items (one row per lost or found report)
+
+| Field | Type | Description |
+|---|---|---|
+| item_id | INT, PK, auto-increment | Report ID |
+| reported_by | INT, FK → users.user_id | Who submitted the report; used for every ownership check |
+| type | ENUM('lost','found') | Lost report or found report |
+| category | VARCHAR(50) | One of the dropdown categories (e.g. Bottle/Container, Electronics) |
+| description | TEXT | Public free-text description; used for matching |
+| private_detail | VARCHAR(255), NULL | Found reports only. A detail only the real owner would know (e.g. a sticker). Never shown to students; shown only to admins when checking a claim |
+| location | VARCHAR(100) | Where it was lost or found; used for matching |
+| item_date | DATE | Date lost or found |
+| status | ENUM('open','matched','claimed','returned','discarded') | `open` until a claim is approved: found item → `matched`, lost item → `claimed`. `returned`/`discarded` reserved for future use |
+| photo_url | VARCHAR(255), NULL | Reserved for a future photo feature; not used yet |
+| created_at | DATETIME | When the report was submitted |
+
+### claims (a student saying "this found item is mine")
+
+| Field | Type | Description |
+|---|---|---|
+| claim_id | INT, PK, auto-increment | Claim ID |
+| lost_item_id | INT, FK → items.item_id | The claimant's own lost report (ownership checked in claim.php) |
+| found_item_id | INT, FK → items.item_id | The found item being claimed (must still be `open`) |
+| claimed_by | INT, FK → users.user_id | The student making the claim |
+| verification_answer | VARCHAR(255), NULL | The claimant's description of an identifying detail, compared by an admin against `private_detail` |
+| status | ENUM('pending','approved','rejected') | Starts `pending`; set by an admin in admin.php. Approving one claim auto-rejects other pending claims on the same found item |
+| created_at | DATETIME | When the claim was submitted |
