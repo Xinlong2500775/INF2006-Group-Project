@@ -32,10 +32,12 @@ against a private detail only the real owner would know.
 ![Architecture diagram](evidence/architecture.png)
 
 Users reach an **Application Load Balancer** (`lostfound-alb`) that spreads traffic over an
-**Auto Scaling group** (`lostfound-asg`) of EC2 web servers in two Availability Zones. Each server
-runs Apache + PHP (`src/`) and the Python matching script (`analytics/match_items.py`). Data lives
-in **Amazon RDS for MySQL** (`lostfound-db`) in private subnets. Database settings come from
-**SSM Parameter Store** at boot. **CloudWatch** collects metrics, logs and the health alarm.
+**Auto Scaling group** (`lostfound-asg`) (min 1, desired 2, max 3) of EC2 web servers (`lostfound-web`) in private subnets across two
+Availability Zones. Each server runs Apache + PHP (`src/`) and the Python matching script
+(`analytics/match_items.py`). Data lives in **Amazon RDS for MySQL** (`lostfound-db`) in private
+subnets. The database login is read from a local config file written at boot. Trust boundaries:
+web servers accept HTTP only from the ALB, and the database accepts MySQL only from the web
+servers. **CloudWatch** collects metrics, logs and the health alarm; **AWS Budgets** alerts on cost.
 Details: `src/infra/DEPLOYMENT.md`. Machine-readable summary: `project_manifest.yaml`.
 
 ## Quick start (local, no AWS needed)
@@ -67,7 +69,7 @@ python3 tests/run_tests.py http://127.0.0.1:8080
 python3 tests/check_secrets.py
 ```
 
-Deploying to AWS: follow `src/infra/DEPLOYMENT.md` (expected cost about US$0.06–0.07 per hour
+Deploying to AWS: follow `src/infra/DEPLOYMENT.md` (expected cost about US$0.11 per hour including the NAT gateway
 while running; delete everything afterwards as described there).
 
 ## Repository map
@@ -103,8 +105,8 @@ while running; delete everything afterwards as described there).
 | Database | MySQL 8 on Amazon RDS (MariaDB locally) |
 | Compute | Amazon EC2 (Amazon Linux 2023, t3.micro), Auto Scaling group, launch template |
 | Network | VPC with public/private subnets in 2 AZs, Application Load Balancer, security groups |
-| Secrets | SSM Parameter Store (SecureString), `.env` file outside the web root |
-| Monitoring | Amazon CloudWatch metrics, alarm, Logs (via CloudWatch agent) |
+| Secrets | Local config file `src/.env` (mode 640, outside the web root), written at boot from the launch template; never in Git |
+| Monitoring | Amazon CloudWatch metrics, alarm, Logs (via CloudWatch agent); AWS Budgets cost alert |
 | Testing | Python `requests` (HTTP tests), SQL check, secrets scanner |
 
 ## Known limitations
@@ -118,5 +120,8 @@ while running; delete everything afterwards as described there).
   is replaced has to log in again. Production fix: store sessions in the database or ElastiCache.
 - **No CSRF tokens and no login rate limiting** (documented in `evidence/test-security.md`).
 - **Single-AZ database** to save cost: backups allow recovery, but not automatic failover.
+- **Auto Scaling minimum is 1**, so in quiet periods the group may run one server in one AZ.
+- **Database password is stored in the launch template's user data**, readable by anyone with
+  permission to view it. Production fix: AWS Secrets Manager with rotation.
 - **Synthetic evaluation data** only; accuracy on real reports is untested.
 - **Photo matching** was considered and not built (needs S3 and image models).

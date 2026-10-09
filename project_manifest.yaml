@@ -2,7 +2,7 @@
 # All paths are relative to the ZIP root. Fields marked TODO must be filled in before submission.
 
 project:
-  group_id: "G010"   # TODO: confirm the exact group ID format used on the LMS (report says "Team 10")
+  group_id: "G010"
   title: "Campus Lost & Found"
   problem_statement: >-
     SIT has no single place to report or search for lost and found items: finders hand items to
@@ -38,11 +38,10 @@ team:
 
 architecture:
   diagram: "evidence/architecture.png"
-  diagram_source: "evidence/architecture.svg"
   service_model: >-
     IaaS for compute and networking (EC2 in an Auto Scaling group behind an Application Load
     Balancer, VPC, security groups); PaaS for the database (Amazon RDS for MySQL) and for
-    monitoring and secrets (CloudWatch, SSM Parameter Store).
+    monitoring (CloudWatch).
   deployment_model: "Public cloud (AWS us-east-1, AWS Academy Learner Lab), single region, 2 Availability Zones"
   components:
     - name: "lostfound-alb"
@@ -54,7 +53,7 @@ architecture:
       purpose: "Web servers registered by the Auto Scaling group"
     - name: "lostfound-asg"
       type: "EC2 Auto Scaling group"
-      purpose: "Apache + PHP web servers and the Python matcher; min 2, max 4, CPU 50% target tracking"
+      purpose: "EC2 instances named lostfound-web (t3.micro) in private app subnets across 2 AZs running Apache + PHP and the Python matcher; min 1, desired 2, max 3, CPU 50% target tracking"
       launch_template: "lostfound-lt"
       config: "src/infra/user-data.sh"
       security_group: "web-sg"
@@ -65,15 +64,15 @@ architecture:
       schema: "data/schema.sql"
       app_account: "data/db_app_user.sql"
       security_group: "db-sg"
-    - name: "/lostfound/db_host, /lostfound/db_password"
-      type: "SSM Parameter Store (String, SecureString)"
-      purpose: "Database settings read by instances at boot; never stored in the repository"
     - name: "lostfound-unhealthy-hosts"
       type: "CloudWatch alarm"
       purpose: "Alerts when any target fails its health check"
     - name: "/lostfound/httpd"
       type: "CloudWatch Logs log group"
       purpose: "Apache and PHP logs from every instance, 7-day retention"
+    - name: "AWS Budgets cost alert"
+      type: "AWS Budgets"
+      purpose: "Alerts the team by email at 80% of a monthly cost limit"
   deployment_guide: "src/infra/DEPLOYMENT.md"
   deployment_record: "evidence/deployment.md"
 
@@ -107,9 +106,11 @@ security:
   secrets_handling: >-
     No credentials in the repository or ZIP. The app reads DB_HOST, DB_USER, DB_PASSWORD and DB_NAME
     from environment variables or src/.env (gitignored; template src/.env.example). On AWS,
-    src/infra/user-data.sh fetches the password at boot from SSM Parameter Store (SecureString,
-    KMS-encrypted) using the instance IAM role, and writes src/.env with mode 640 outside the web
-    root. The app connects as the least-privilege lostfound_app account (SELECT, INSERT, UPDATE
+    the endpoint and password are entered only in the launch template's copy of
+    src/infra/user-data.sh, which writes them at boot to the local config file src/.env (mode 640,
+    root and Apache only, outside the web root); the Git copy keeps placeholders. No Secrets
+    Manager (cost and scope); moving to Secrets Manager with rotation is the documented production
+    improvement. The app connects as the least-privilege lostfound_app account (SELECT, INSERT, UPDATE
     only). Checked by tests/check_secrets.py.
   named_threat: "Insecure direct object reference (OWASP A01 Broken Access Control), tested in evidence/test-security.md"
 
@@ -118,7 +119,7 @@ run:
     - "PHP 8.x with the mysqli extension (e.g. XAMPP on Windows, or Apache + php-fpm on Linux)"
     - "MySQL 8 or MariaDB 10.4+"
     - "Python 3.9+ with pip"
-    - "For the cloud deployment only: an AWS account (AWS Academy Learner Lab), approx. US$0.06-0.07 per hour while running; see src/infra/DEPLOYMENT.md"
+    - "For the cloud deployment only: an AWS account (AWS Academy Learner Lab), approx. US$0.11 per hour including the NAT gateway while running; see src/infra/DEPLOYMENT.md"
   commands:
     - "pip install -r analytics/requirements.txt -r tests/requirements.txt"
     - "python3 analytics/match.py   # data/AI evaluation, offline, no database needed"

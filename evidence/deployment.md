@@ -17,9 +17,11 @@ are replaced with `<redacted>`. How it was built: `src/infra/DEPLOYMENT.md`.
 |---|---|---|
 | Load balancer | ALB `lostfound-alb` | Internet-facing, 2 AZs, HTTP 80 → `lostfound-tg` |
 | Target group | `lostfound-tg` | Health check `/health.php`, healthy 2 / unhealthy 2, 15 s |
-| Web tier | ASG `lostfound-asg` + launch template `lostfound-lt` | t3.micro, Amazon Linux 2023, min 2 / desired 2 / max 4, CPU 50% target tracking, ELB health checks |
+| Web tier | ASG `lostfound-asg` + launch template `lostfound-lt`, instances named `lostfound-web` | t3.micro, Amazon Linux 2023, private app subnets in 2 AZs, min 1 / desired 2 / max 3, CPU 50% target tracking, ELB health checks |
 | Database | RDS `lostfound-db` | MySQL, db.t3.micro, private subnets, Publicly accessible = No, backups 1 day |
-| Secrets | SSM `/lostfound/db_host`, `/lostfound/db_password` (SecureString) | Read at boot via `LabInstanceProfile` |
+| Credentials | Local config file `src/.env` on each instance | Written at boot by the launch template user data, mode 640; no Secrets Manager |
+| Network egress | NAT gateway (1 AZ) | Lets private web servers install packages and pull the repo |
+| Cost | AWS Budgets alert | Monthly limit, alert at 80% |
 | Monitoring | CloudWatch alarm `lostfound-unhealthy-hosts` | UnHealthyHostCount ≥ 1, 1 × 1 min |
 
 ## Security group rules (exported, redacted)

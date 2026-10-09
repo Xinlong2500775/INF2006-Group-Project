@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | **Objective** | Show that the service keeps working when a web server fails, and that the failure is detected and repaired automatically (report §1.2: CloudWatch alarm goes off within 5 minutes of a fault caused on purpose, e.g. stopping an EC2 instance). |
-| **Mechanisms tested** | ALB health checks on `/health.php` across 2 AZs; Auto Scaling group `lostfound-asg` (min 2) replacing unhealthy instances; CloudWatch alarm `lostfound-unhealthy-hosts`. |
+| **Mechanisms tested** | ALB health checks on `/health.php` across 2 AZs; Auto Scaling group `lostfound-asg` (min 1, desired 2, max 3) replacing unhealthy instances; CloudWatch alarm `lostfound-unhealthy-hosts`. |
 | **Date** | `YYYY-MM-DD` *(fill in)* |
 | **Setup** | Deployed as in `src/infra/DEPLOYMENT.md`. Both targets in `lostfound-tg` healthy. Alarm in OK state. |
 | **Artefacts** | `evidence/test-resilience-log-YYYY-MM-DD.txt` (availability probe output), CloudWatch alarm history (exported text or one redacted screenshot), `evidence/deployment.md` |
@@ -40,8 +40,8 @@
 - Alarm enters ALARM **within 5 minutes** of T0.
 - The probe shows `200` throughout, or at most a few failed requests while the ALB marks the
   instance unhealthy (2 failed checks × 15 s ≈ 30 s).
-- The ASG launches a replacement automatically; capacity returns to 2 healthy instances with
-  no manual action.
+- The ASG launches a replacement automatically; capacity returns to the desired 2 healthy
+  instances with no manual action.
 
 ## Actual result
 
@@ -83,7 +83,7 @@ Multi-AZ so the database is not a single point of failure; add a 5xx-rate alarm.
 | **Objective** | Show the target-tracking policy (average CPU 50%) adds web servers when load rises and removes them afterwards. |
 | **Command** | `python3 tests/load_test.py http://<alb-dns-name> --threads 30 --minutes 12 \| tee evidence/test-load-YYYY-MM-DD.txt` |
 | **Why this page** | The script repeatedly opens a matches page. Each request starts the Python matcher, measured locally at 1.5–1.9 s per call, about 1.3 s of which is loading scikit-learn, so it is the most CPU-heavy page in the app. |
-| **Expected** | ASG CPU above 50% within a few minutes; `lostfound-asg` desired capacity rises above 2; p95 latency improves once new instances are healthy; capacity returns to 2 about 15 minutes after the load stops. |
+| **Expected** | ASG CPU above 50% within a few minutes; `lostfound-asg` desired capacity rises to 3 (the maximum); p95 latency improves once new instances are healthy; capacity returns to 2 about 15 minutes after the load stops (max 3 caps the scale-out). |
 
 Export afterwards:
 

@@ -2,7 +2,7 @@
 
 Each threat is mapped to the control that addresses it, where the control lives, and the test
 or evidence that shows it works. Threat categories follow the OWASP Top 10 (2021) where one
-applies. Labels match `evidence/architecture.png` and `src/infra/`.
+applies. Labels match `evidence/architecture.png` (including its two trust-boundary lines) and `src/infra/`.
 
 ## Application threats
 
@@ -22,13 +22,13 @@ applies. Labels match `evidence/architecture.png` and `src/infra/`.
 
 | # | Threat | Control | Implemented in | Verified by |
 |---|---|---|---|---|
-| T10 | **Credentials committed to Git or the ZIP** | DB settings read from environment variables or `src/.env`; real files gitignored; only `src/.env.example` with placeholders is committed | `src/inc/db.php`, `.gitignore`, `src/.env.example` | S18 (`tests/check_secrets.py`) |
+| T10 | **Credentials committed to Git or the ZIP** | DB login read from the local config file `src/.env` (mode 640, outside the web root), written at boot from the launch template; real values never in Git: `.gitignore`, placeholders in `src/.env.example` and `src/infra/user-data.sh` | `src/inc/db.php`, `src/infra/user-data.sh`, `.gitignore` | S18 (`tests/check_secrets.py`) |
 | T11 | **Over-privileged database account** (least privilege) | App connects as `lostfound_app` with only SELECT, INSERT, UPDATE on the 3 tables: no DELETE, DROP, ALTER or GRANT. The RDS master account is only used to load the schema | `data/db_app_user.sql` | `SHOW GRANTS` output in `evidence/deployment.md` |
 | T12 | **Database reachable from the internet** (restricted network access) | RDS in private subnets, "Publicly accessible: No"; `db-sg` allows MySQL 3306 **only from `web-sg`** | `src/infra/DEPLOYMENT.md` | `evidence/deployment.md` (redacted SG rules) + connection attempt from a laptop times out |
-| T13 | **Web servers attacked directly, bypassing the load balancer** | `web-sg` allows HTTP 80 **only from `alb-sg`**; no SSH from 0.0.0.0/0 (EC2 Instance Connect / SSM used instead) | `src/infra/DEPLOYMENT.md` | `evidence/deployment.md` (redacted SG rules) |
-| T14 | **Over-privileged cloud role** (least privilege) | EC2 instances use the Learner Lab `LabInstanceProfile`; the app itself makes no AWS API calls, so no extra permissions are added. Team members use their own Learner Lab accounts, no shared keys | `src/infra/DEPLOYMENT.md` | `evidence/deployment.md` |
-| T15 | **Single server failure / overload** (availability) | ALB across 2 AZs with health checks; Auto Scaling group (min 2) replaces unhealthy instances | `src/infra/DEPLOYMENT.md` | `evidence/test-resilience.md` |
-| T16 | **Attack or fault goes unnoticed** | CloudWatch alarm on unhealthy hosts / 5xx; Apache access and error logs | `src/infra/DEPLOYMENT.md` | `evidence/monitoring.md` |
+| T13 | **Web servers attacked directly, bypassing the load balancer** | `web-sg` allows HTTP 80 **only from `alb-sg`**; web servers in private subnets with no public IP; no SSH from 0.0.0.0/0 | `src/infra/DEPLOYMENT.md` | `evidence/deployment.md` (redacted SG rules) |
+| T14 | **Over-privileged cloud role** (least privilege) | EC2 instances use the Learner Lab `LabInstanceProfile`; used only by the CloudWatch agent to send logs; the app itself makes no AWS API calls, so no extra permissions are added. Team members use their own Learner Lab accounts, no shared keys | `src/infra/DEPLOYMENT.md` | `evidence/deployment.md` |
+| T15 | **Single server failure / overload** (availability) | ALB across 2 AZs with `/health.php` checks; Auto Scaling group (min 1, desired 2, max 3) replaces unhealthy instances | `src/infra/DEPLOYMENT.md` | `evidence/test-resilience.md` |
+| T16 | **Attack or fault goes unnoticed; runaway cost** | CloudWatch alarm on unhealthy hosts; Apache/PHP logs in CloudWatch Logs; AWS Budgets cost alert | `src/infra/DEPLOYMENT.md` | `evidence/monitoring.md` |
 
 ## Responsible data and AI use
 
@@ -39,5 +39,7 @@ applies. Labels match `evidence/architecture.png` and `src/infra/`.
 
 ## Accepted risks (documented, not fixed)
 
-No CSRF tokens, no login rate limiting, HTTP only. Reasons and production fixes are in
+No CSRF tokens, no login rate limiting, HTTP only. The database password sits in the launch
+template's user data (readable by anyone allowed to view the template); production would use
+AWS Secrets Manager with rotation. Reasons and production fixes are in
 `evidence/test-security.md` → "Known limitations".

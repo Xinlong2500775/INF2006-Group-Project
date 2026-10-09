@@ -1,27 +1,33 @@
 #!/bin/bash
 # =============================================================================
 # EC2 launch script (user data) for Campus Lost & Found web servers.
-# Used by the launch template "lostfound-lt", so every instance the Auto
+# Used by the launch template "lostfound-lt" (instances tagged Name=lostfound-web), so every instance the Auto
 # Scaling group starts configures itself the same way, with no manual steps.
 #
 # Target OS: Amazon Linux 2023. Region: us-east-1.
 #
-# Secrets: the database password is NOT in this script. It is read at boot
-# from SSM Parameter Store (SecureString /lostfound/db_password) using the
-# instance's IAM role (LabInstanceProfile in the AWS Academy Learner Lab).
-# Only the non-secret values below need editing before use.
+# Credentials: the app reads the database login from a local config file
+# (src/.env, mode 640, outside the web root). This script writes that file.
+# The real endpoint and password are typed into the launch template's copy of
+# this script in the AWS console ONLY. The copy in Git keeps the <placeholders>
+# below and must never contain real values (tests/check_secrets.py checks this).
 # =============================================================================
-set -euxo pipefail
+set -euo pipefail
 
-# ---- Edit these (not secret) ------------------------------------------------
-REPO_URL="https://github.com/Xinlong2500775/INF2006-Group-Project.git"
-REPO_REF="main"                         # or a commit hash for a pinned release
-DB_HOST_PARAM="/lostfound/db_host"      # SSM String:       RDS endpoint
-DB_PASSWORD_PARAM="/lostfound/db_password"  # SSM SecureString: lostfound_app password
+# ---- Fill in ONLY in the launch template, never in Git ----------------------
+DB_HOST='<rds-endpoint>'        # RDS console > lostfound-db > Connectivity > Endpoint
+DB_PASSWORD='<db-password>'     # password of the lostfound_app database user
+# ---- Usually no need to change -----------------------------------------------
 DB_USER="lostfound_app"
 DB_NAME="inf2006"
-AWS_REGION="us-east-1"
+REPO_URL="https://github.com/Xinlong2500775/INF2006-Group-Project.git"
+REPO_REF="main"                         # or a commit hash for a pinned release
 # -----------------------------------------------------------------------------
+
+case "$DB_HOST$DB_PASSWORD" in
+  *"<"*) echo "user-data: fill in DB_HOST and DB_PASSWORD in the launch template first" >&2; exit 1 ;;
+esac
+set -x   # log the remaining steps (after the password lines, so it is not printed)
 
 APP_DIR=/var/www/lostfound
 
@@ -34,19 +40,17 @@ git clone "$REPO_URL" "$APP_DIR"
 git -C "$APP_DIR" checkout "$REPO_REF"
 python3 -m pip install -r "$APP_DIR/analytics/requirements.txt"
 
-# 3. Database settings: fetched from SSM at boot, written to src/.env,
-#    readable only by root and the apache group, never served by Apache
-DB_HOST=$(aws ssm get-parameter --region "$AWS_REGION" --name "$DB_HOST_PARAM" \
-          --query Parameter.Value --output text)
-DB_PASSWORD=$(aws ssm get-parameter --region "$AWS_REGION" --name "$DB_PASSWORD_PARAM" \
-          --with-decryption --query Parameter.Value --output text)
+# 3. Database settings: written to src/.env, readable only by root and the
+#    apache group, outside the public web folder
 umask 027
+set +x
 cat > "$APP_DIR/src/.env" <<EOF
 DB_HOST=$DB_HOST
 DB_USER=$DB_USER
 DB_PASSWORD=$DB_PASSWORD
 DB_NAME=$DB_NAME
 EOF
+set -x
 chown root:apache "$APP_DIR/src/.env"
 chmod 640 "$APP_DIR/src/.env"
 unset DB_PASSWORD

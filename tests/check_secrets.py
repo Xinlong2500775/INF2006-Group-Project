@@ -64,7 +64,7 @@ for rel in files:
         continue  # binary file
     for pat in PASSWORD_ASSIGNMENTS:
         for m in pat.finditer(text):
-            value = m.group("v").strip().strip("'\"")
+            value = re.split(r"\s+#", m.group("v"))[0].strip().strip("'\"")  # drop trailing comment
             if not PLACEHOLDERS.match(value):
                 line = text[:m.start()].count("\n") + 1
                 problems.append(f"{rel}:{line}: hard-coded DB password")
