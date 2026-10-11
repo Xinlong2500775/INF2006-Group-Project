@@ -5,8 +5,8 @@ are replaced with `<redacted>`. How it was built: `src/infra/DEPLOYMENT.md`.
 
 | Field | Value |
 |---|---|
-| Date deployed | `1 October 2026` |
-| Deployed by | `Zhou Xinlong` |
+| Date deployed | `10 October 2026` |
+| Deployed by | `Teo Siow Min Glenda` |
 | Region | us-east-1 (AWS Academy Learner Lab) |
 | Repo commit deployed | `1bdf450` |
 | Launch script | `src/infra/user-data.sh` |
@@ -22,7 +22,7 @@ are replaced with `<redacted>`. How it was built: `src/infra/DEPLOYMENT.md`.
 | Credentials | Local config file `src/.env` on each instance | Written at boot by the launch template user data, mode 640; no Secrets Manager |
 | Network egress | NAT gateway (1 AZ) | Lets private web servers install packages and pull the repo |
 | Cost | AWS Budgets alert | Monthly limit, alert at 80% |
-| Monitoring | CloudWatch alarm `lostfound-unhealthy-hosts` | UnHealthyHostCount ≥ 1, 1 × 1 min |
+| Monitoring | CloudWatch alarm `lostfound-unhealthy-alarm` | UnHealthyHostCount ≥ 1, 1 × 1 min |
 
 ## Security group rules (exported, redacted)
 
