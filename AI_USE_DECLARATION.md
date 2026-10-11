@@ -11,10 +11,10 @@ evidence file that the team ran.
 
 | Tool | Provider | Used by | Used for |
 |---|---|---|---|
-| Claude | Anthropic | Team 10 members | Explanations, code suggestions and review, test scripts, documentation drafts (details below) |
+| Claude | Anthropic | Team 10 members | Explanations, code suggestions and review, test scripts, documentation and report drafts, final architecture diagram (details below) |
+| ChatGPT | OpenAI | Team 10 members | Second opinions while reviewing: checking wording, the architecture diagram and evidence summaries (details below) |
 
-No other AI tools (e.g. ChatGPT, GitHub Copilot) were used. *(TODO: each member confirms this is
-true for them, or adds the tool they used to this table.)*
+No other AI tools (e.g. GitHub Copilot) were used.
 
 ## 2. Where AI was used
 
@@ -27,10 +27,10 @@ true for them, or adds the tool they used to this table.)*
 | Dataset (`data/generate_dataset.py`) | Helped write the generator; fixed a hard-coded file path that stopped it running on other machines | Team defined categories, campus locations and the 85/20 split; regeneration verified to produce byte-identical CSVs |
 | Automated tests (`tests/`) | Generated `run_tests.py`, `check_secrets.py` and `check_password_hashes.sql` from the test plan | Team ran them locally and against the ALB; the logs in `evidence/` are from the team's own runs. A deliberate bug was injected to confirm the tests detect failures (`tests/README.md`) |
 | AWS deployment (`src/infra/`) | Drafted the launch script and deployment guide (security groups, private subnets, credentials file, stickiness, alarm) and helped troubleshoot console steps that differed from the lab sheets | All AWS resources were created, configured and checked by the team in the AWS console; `evidence/deployment.md` records the actual configuration |
-| Architecture diagram (`evidence/architecture.png`) | Reviewed the team's diagram against the brief and suggested adding labelled trust boundaries | Diagram designed and revised by the team *(TODO: name the tool used to make it; if an AI image tool, list it in section 1)*; labels checked against the deployed resource names |
+| Architecture diagram (`evidence/architecture.png`) | Reviewed the team's draft against the brief and the code, and helped revise it (labels, trust boundaries, security-group rules and layout) | Diagram designed by the team; every label checked against `src/infra/DEPLOYMENT.md`, the manifest and the deployed resource names |
 | Security analysis (`evidence/threat-control-map.md`) | Suggested threat categories (OWASP Top 10) and mapped them to controls | Team confirmed each control exists in the code/config and is covered by a test |
 | Documentation (`README.md`, `data/README.md`, `analytics/README.md`, evidence templates, `project_manifest.yaml`, this file) | Drafted structure and text from the project brief and the team's artefacts | Team filled in results, checked every fact against the artefacts and evidence files |
-| `report.pdf` | Review for consistency with the code and evidence, grammar and clarity suggestions | Analysis, results, decisions and conclusions are the team's own |
+| `report.pdf` | Claude drafted sections from the team's notes, code and evidence files, rewrote them in plainer language, and helped trim the report to the page limit | The team checked every fact and number against the evidence files, edited the text, and wrote the reflection (Section 8.3) themselves |
 
 ## 3. Sources, baselines and licences
 
@@ -44,7 +44,6 @@ true for them, or adds the tool they used to this table.)*
 - scikit-learn documentation for `TfidfVectorizer` and `cosine_similarity`.
 
 No third-party application code, templates or open-source project was used as a starting point.
-*(TODO: add any tutorial or snippet a member copied from, with URL and licence.)*
 
 ### Open-source software
 
