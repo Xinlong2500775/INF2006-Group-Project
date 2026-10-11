@@ -4,7 +4,7 @@
 |---|---|
 | **Objective** | Show that the service keeps working when a web server fails, and that the failure is detected and repaired automatically (report §1.2: CloudWatch alarm goes off within 5 minutes of a fault caused on purpose, e.g. stopping an EC2 instance). |
 | **Mechanisms tested** | ALB health checks on `/health.php` across 2 AZs; Auto Scaling group `lostfound-asg` (min 1, desired 2, max 3) replacing unhealthy instances; CloudWatch alarm `lostfound-unhealthy-alarm`. |
-| **Date** | Part A: 2026-10-11, 17:30 SGT (UTC+8) · Part B: *(TODO: date)* |
+| **Date** | Part A: 2026-10-11, 17:30 SGT (UTC+8) · Part B: 2026-10-11, 18:43 SGT |
 | **Setup** | Deployed as in `src/infra/DEPLOYMENT.md`. Both targets in `lostfound-tg` healthy. Alarm in OK state. |
 | **Artefacts** | `evidence/test-resilience-log-2026-10-11.txt` (availability probe output), CloudWatch alarm history (exported text or one redacted screenshot), `evidence/deployment.md` |
 
@@ -99,34 +99,53 @@ comes from the 1-minute metric period and the time the ALB takes to publish the 
 
 | Field | Value |
 |---|---|
-| **Objective** | Show the target-tracking policy (average CPU 50%) adds web servers when load rises and removes them afterwards. |
-| **Command** | `python3 tests/load_test.py http://<alb-dns-name> --threads 30 --minutes 12 \| tee evidence/test-load-YYYY-MM-DD.txt` |
-| **Why this page** | The script repeatedly opens a matches page. Each request starts the Python matcher, measured locally at 1.5–1.9 s per call, about 1.3 s of which is loading scikit-learn, so it is the most CPU-heavy page in the app. |
-| **Expected** | ASG CPU above 50% within a few minutes; `lostfound-asg` desired capacity rises to 3 (the maximum); p95 latency improves once new instances are healthy; capacity returns to 2 about 15 minutes after the load stops (max 3 caps the scale-out). |
+| **Objective** | Show that the target-tracking policy adds a web server when load rises. |
+| **Command** | `py tests\load_test.py http://lostfound-alb-1449062045.us-east-1.elb.amazonaws.com --threads 30 --minutes 10` (stopped manually at 18:51:49) |
+| **Why this page** | The script repeatedly opens a matches page. Each request starts the Python matcher, measured locally at 1.5–1.9 s per call (about 1.3 s of it loading scikit-learn), so it is the most CPU-heavy page in the app. |
+| **Setup** | `lostfound-asg` at 2 healthy instances (`i-0ebed879272f4e01e`, `i-048a8ce725129c48c`), max 3. Target-tracking policy on average CPU, 300 s instance warm-up, scale-in enabled. |
+| **Change for this test** | A first run at the normal **50%** target peaked at about 30% average CPU and did **not** scale out. For this run the target was lowered to **20%** to confirm the scale-out mechanism itself, then restored to 50% afterwards. |
+| **Expected** | Average CPU above the target within a few minutes; desired capacity rises from 2 to 3; the new instance passes the ALB health check. |
 
-Export afterwards:
-
-```bash
-aws autoscaling describe-scaling-activities --auto-scaling-group-name lostfound-asg --max-items 6 \
-  --query "Activities[].[StartTime,StatusCode,Description]" --output text
-```
+| Step | Event | Where checked | Time (SGT) | After B0 |
+|---|---|---|---|---|
+| B0 | Load test started (30 threads) | Terminal | 18:43:00 | 0:00 |
+| B1 | Average CPU above the 20% target | ASG → Monitoring | 18:45:00 | 2:00 |
+| B2 | Target-tracking AlarmHigh → In alarm | CloudWatch → Alarms | 18:49:00 | 6:00 |
+| B3 | ASG launched a 3rd instance (desired 2 → 3), `i-072706211337f32c3` | ASG → Activity | 18:49:45 | 6:45 |
+| B4 | 3rd instance healthy | `lostfound-tg` → Targets | 18:51:00 | 8:00 |
+| B5 | Load test stopped | Terminal | 18:51:49 | 8:49 |
 
 | Measure | Value |
 |---|---|
-| Time load started | |
-| Peak average CPU (CloudWatch, lostfound-asg) | |
-| Time scale-out activity started | |
-| Max instances reached | |
-| p95 latency before / after scale-out | |
-| Errors during the test | |
+| Peak average CPU (`lostfound-asg`) | 30.8% |
+| Max instances reached | **3** (scale-out: yes) |
+| Requests sent | 518 |
+| Successful responses | 425 (82.0%) |
+| Errors | 93 (18.0%), client-side 30 s timeouts while the servers were saturated |
+| Response time | p50 about 28.7 s, p95 about 29–30 s |
 
-```
-(paste the scaling activities export here)
-```
+Auto Scaling activity (console, 2026-10-11):
 
-**Interpretation:** *(e.g. whether scale-out happened, how long it took, and the bottleneck it
-revealed: per-request matcher start-up; the fix is to compute matches once when a report is
-submitted and store them.)*
+| Status | Description | Start (SGT) |
+|---|---|---|
+| Successful | Launching a new EC2 instance: `i-072706211337f32c3` | 18:49:45 |
+
+**Result: scale-out MET at the lowered 20% target; NOT triggered at the normal 50% target.**
+
+**Interpretation:** Under 30 concurrent users on the matches page, average CPU passed the 20% target
+within 2 minutes, and the policy scaled the group from 2 to 3 instances 6 min 45 s after the test
+started; the new instance was serving traffic 1 min 15 s later. So the mechanism works, but the test
+also showed two weaknesses. First, CPU is a poor signal for this app: requests were already taking
+about 29 s, with 18% timing out, while average CPU stayed near 30%, so at the normal 50% target the
+group would not have grown at all. The likely reasons are that requests queue for PHP workers while
+each one waits on a Python process, and that EC2 basic monitoring averages CPU over 5 minutes, which
+also explains why the policy took about 4 minutes to react after B1. Second, the per-request matcher
+is the bottleneck, as expected.
+
+**Improvement plan:** scale on ALB `RequestCountPerTarget` or `TargetResponseTime` instead of CPU;
+enable 1-minute detailed monitoring so the policy reacts faster; and compute matches once when a
+report is submitted (stored in the database) so the matches page no longer starts Python on every
+request.
 
 ## Known limitation
 
