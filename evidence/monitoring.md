@@ -10,7 +10,7 @@
 
 | Signal | Source | Why it matters | Alert |
 |---|---|---|---|
-| `UnHealthyHostCount` (lostfound-tg) | ALB → CloudWatch, automatic | A web server is down or can't reach the database (`/health.php` returns 503) | **Alarm `lostfound-unhealthy-hosts`**: ≥ 1 for 1 minute |
+| `UnHealthyHostCount` (lostfound-tg) | ALB → CloudWatch, automatic | A web server is down or can't reach the database (`/health.php` returns 503) | **Alarm `lostfound-unhealthy-alarm`**: ≥ 1 for 1 minute |
 | `HTTPCode_Target_5XX_Count` | ALB → CloudWatch, automatic | App errors seen by users | Watched on the dashboard |
 | `TargetResponseTime` | ALB → CloudWatch, automatic | Slow pages (e.g. matching under load) | Watched |
 | `CPUUtilization` (lostfound-asg) | EC2 → CloudWatch, automatic | Drives the scale-out policy (target 50%) | Auto Scaling policy |
@@ -24,7 +24,7 @@ Performed as part of Test 4 (`evidence/test-resilience.md`): one web server was 
 alarm moved OK → ALARM → OK.
 
 ```
-(paste: aws cloudwatch describe-alarm-history --alarm-name lostfound-unhealthy-hosts --history-item-type StateUpdate --max-records 5 --query "AlarmHistoryItems[].[Timestamp,HistorySummary]" --output text)
+(paste: aws cloudwatch describe-alarm-history --alarm-name lostfound-unhealthy-alarm --history-item-type StateUpdate --max-records 5 --query "AlarmHistoryItems[].[Timestamp,HistorySummary]" --output text)
 ```
 
 **Interpretation:** *(e.g. "The alarm fired 1 min 40 s after the instance was stopped, inside

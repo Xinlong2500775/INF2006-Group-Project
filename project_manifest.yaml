@@ -64,7 +64,7 @@ architecture:
       schema: "data/schema.sql"
       app_account: "data/db_app_user.sql"
       security_group: "db-sg"
-    - name: "lostfound-unhealthy-hosts"
+    - name: "lostfound-unhealthy-alarm"
       type: "CloudWatch alarm"
       purpose: "Alerts when any target fails its health check"
     - name: "/lostfound/httpd"

@@ -26,7 +26,7 @@ Users ──HTTP 80──> Internet Gateway ──> lostfound-alb (alb-sg, publi
                                             ▼
         lostfound-db: RDS MySQL, Single-AZ, db.t3.micro, private DB subnets, not public
 
-CloudWatch: logs, metrics, alarm lostfound-unhealthy-hosts · AWS Budgets: cost alert
+CloudWatch: logs, metrics, alarm lostfound-unhealthy-alarm · AWS Budgets: cost alert
 ```
 
 ## 1. Network: VPC, subnets and security groups
@@ -125,7 +125,7 @@ CloudWatch → Alarms → Create alarm:
 - Metric: ApplicationELB → Per AppELB, per TG Metrics → `lostfound-tg` / `lostfound-alb` →
   **UnHealthyHostCount**
 - Statistic Maximum, period 1 minute; condition **≥ 1** for 1 of 1 datapoints
-- Name **`lostfound-unhealthy-hosts`**; notification optional (an SNS email topic if allowed)
+- Name **`lostfound-unhealthy-alarm`**; notification optional (an SNS email topic if allowed)
 
 **Logs:** `user-data.sh` installs the CloudWatch agent, which ships Apache and PHP logs to the log
 group **`/lostfound/httpd`** with 7-day retention. Check CloudWatch → Log groups a few minutes

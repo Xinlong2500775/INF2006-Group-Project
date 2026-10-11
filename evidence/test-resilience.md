@@ -3,10 +3,10 @@
 | Field | Value |
 |---|---|
 | **Objective** | Show that the service keeps working when a web server fails, and that the failure is detected and repaired automatically (report §1.2: CloudWatch alarm goes off within 5 minutes of a fault caused on purpose, e.g. stopping an EC2 instance). |
-| **Mechanisms tested** | ALB health checks on `/health.php` across 2 AZs; Auto Scaling group `lostfound-asg` (min 1, desired 2, max 3) replacing unhealthy instances; CloudWatch alarm `lostfound-unhealthy-hosts`. |
-| **Date** | `YYYY-MM-DD` *(fill in)* |
+| **Mechanisms tested** | ALB health checks on `/health.php` across 2 AZs; Auto Scaling group `lostfound-asg` (min 1, desired 2, max 3) replacing unhealthy instances; CloudWatch alarm `lostfound-unhealthy-alarm`. |
+| **Date** | Part A: 2026-10-11, 17:30 SGT (UTC+8) · Part B: *(TODO: date)* |
 | **Setup** | Deployed as in `src/infra/DEPLOYMENT.md`. Both targets in `lostfound-tg` healthy. Alarm in OK state. |
-| **Artefacts** | `evidence/test-resilience-log-YYYY-MM-DD.txt` (availability probe output), CloudWatch alarm history (exported text or one redacted screenshot), `evidence/deployment.md` |
+| **Artefacts** | `evidence/test-resilience-log-2026-10-11.txt` (availability probe output), CloudWatch alarm history (exported text or one redacted screenshot), `evidence/deployment.md` |
 
 ## Steps
 
@@ -25,14 +25,14 @@
 2. **Record the start time T0**, then cause the fault: EC2 → Instances → select one
    `lostfound-asg` instance → **Instance state → Stop instance**.
 3. Watch `lostfound-tg` → Targets: the stopped instance becomes **unhealthy/draining**.
-4. Watch CloudWatch → Alarms → `lostfound-unhealthy-hosts`: record the time **T1** it enters
+4. Watch CloudWatch → Alarms → `lostfound-unhealthy-alarm`: record the time **T1** it enters
    **In alarm**.
 5. Watch EC2 → Auto Scaling groups → `lostfound-asg` → Activity: record the time **T2** a
    replacement instance is launched, and **T3** when it shows **healthy** in the target group.
 6. Record the time **T4** the alarm returns to **OK**. Stop the probe (Ctrl+C).
 7. Export the alarm history:
    ```bash
-   aws cloudwatch describe-alarm-history --alarm-name lostfound-unhealthy-hosts --history-item-type StateUpdate --max-records 5 --query "AlarmHistoryItems[].[Timestamp,HistorySummary]" --output text
+   aws cloudwatch describe-alarm-history --alarm-name lostfound-unhealthy-alarm --history-item-type StateUpdate --max-records 5 --query "AlarmHistoryItems[].[Timestamp,HistorySummary]" --output text
    ```
 
 ## Expected result
@@ -43,38 +43,57 @@
 - The ASG launches a replacement automatically; capacity returns to the desired 2 healthy
   instances with no manual action.
 
-## Actual result
+## Actual result (Part A, 2026-10-11)
 
-| Event | Time | Minutes after T0 |
-|---|---|---|
-| T0: instance stopped | | 0 |
-| Target marked unhealthy | | |
-| T1: alarm IN ALARM | | |
-| T2: replacement launched | | |
-| T3: replacement healthy | | |
-| T4: alarm back to OK | | |
+Instance stopped: `i-024dfbf7458b69d26` · replacement launched by the ASG: `i-0ebed879272f4e01e`.
+
+| Event | Where checked | Time (SGT) | After T0 |
+|---|---|---|---|
+| T0: one `lostfound-web` instance stopped | EC2 → Instances | 17:30:49 | 0:00 |
+| Replacement launched by `lostfound-asg` | ASG → Activity | 17:30:51 | 0:02 |
+| Stopped target marked unhealthy / draining | `lostfound-tg` → Targets | 17:31:10 | 0:21 |
+| T1: alarm `lostfound-unhealthy-alarm` → In alarm | CloudWatch → Alarms | 17:33:12 | **2:23** |
+| T3: replacement healthy in `lostfound-tg` | `lostfound-tg` → Targets | 17:34:05 | 3:16 |
+| T4: alarm back to OK | CloudWatch → Alarms | 17:34:06 | 3:17 |
 
 | Measure | Value |
 |---|---|
-| Probe requests during test | |
-| Non-200 responses | __ (__%) |
-| Longest run of failures | __ seconds |
+| Probe requests during test (every 5 s) | 92 |
+| HTTP 200 | 90 |
+| Non-200 responses | 2 (2.2%) |
+| Site stayed up | Yes, on the remaining instance |
+
+Auto Scaling activity (console export, 2026-10-11):
+
+| Status | Description | Start (SGT) | End (SGT) | Cause |
+|---|---|---|---|---|
+| Connection draining in progress | Terminating EC2 instance `i-024dfbf7458b69d26` (waiting for ELB connection draining) | 17:30:49 | in progress | Instance taken out of service after an EC2 health check showed it had been stopped |
+| Successful | Launching a new EC2 instance `i-0ebed879272f4e01e` | 17:30:51 | 17:30:56 | Launched to replace an unhealthy instance |
 
 ```
-(paste the alarm history export here)
+(TODO: paste the output of: aws cloudwatch describe-alarm-history --alarm-name lostfound-unhealthy-alarm --history-item-type StateUpdate --max-records 5 --query "AlarmHistoryItems[].[Timestamp,HistorySummary]" --output text)
 ```
 
-**Target (alarm within 5 minutes): MET / NOT MET**
+**Target (alarm within 5 minutes): MET (2 min 23 s).**
 
 ## Interpretation
 
-*(2 to 4 sentences: what users experienced, how long recovery took, what limited it, e.g. the
-300 s grace period and package install time in `user-data.sh`.)*
+Users were barely affected: 2 of 92 probe requests failed, most likely in the short window before the
+load balancer stopped routing to the stopped instance (marked unhealthy after 21 s, consistent with
+2 failed checks at a 15 s interval). The Auto Scaling group noticed the stopped instance through its
+EC2 health check and launched a replacement 2 seconds later, with no manual action; the replacement
+passed `/health.php` 3 min 16 s after the fault, most of which is `user-data.sh` installing packages
+and cloning the repository. The alarm fired after 2 min 23 s, inside the 5-minute target; the delay
+comes from the 1-minute metric period and the time the ALB takes to publish the metric. For about
+3 minutes the site ran on one instance, so a second failure in that window would have caused an outage.
 
 ## Improvement plan
 
-*(e.g. bake a custom AMI with packages pre-installed to cut replacement time; enable RDS
-Multi-AZ so the database is not a single point of failure; add a 5xx-rate alarm.)*
+- Bake a custom AMI with Apache, PHP, Python and scikit-learn pre-installed, so a replacement is
+  healthy in under a minute instead of about 3.
+- Add an SNS email target to `lostfound-unhealthy-alarm` so the team is notified, not just shown
+  the alarm in the console, and add a second alarm on the ALB 5xx count.
+- Enable RDS Multi-AZ so the database is not the remaining single point of failure.
 
 ## Part B: scale-out under load
 
