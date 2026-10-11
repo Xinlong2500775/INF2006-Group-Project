@@ -69,8 +69,8 @@ python3 tests/run_tests.py http://127.0.0.1:8080
 python3 tests/check_secrets.py
 ```
 
-Deploying to AWS: follow `src/infra/DEPLOYMENT.md` (expected cost about US$0.11 per hour including the NAT gateway
-while running; delete everything afterwards as described there).
+Deploying to AWS: follow `src/infra/DEPLOYMENT.md` (expected cost about US$0.13 per hour, about US$95 per month, including the NAT
+gateway, ALB and public IPv4 addresses while running; delete everything afterwards as described there).
 
 ## Repository map
 

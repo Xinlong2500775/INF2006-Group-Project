@@ -7,9 +7,10 @@ labels used in the diagram, the threat-control map and the evidence files.
 report and evidence are updated to match.**
 
 Expected cost while running (us-east-1 on-demand list prices, approximate): 2 × t3.micro
-≈ US$0.021/h, db.t3.micro ≈ US$0.017/h, ALB ≈ US$0.023/h, NAT gateway ≈ US$0.045/h, so
-**about US$0.11 per hour** plus small data charges. Delete everything after collecting evidence
-(step 10).
+≈ US$0.021/h, db.t3.micro ≈ US$0.017/h, ALB ≈ US$0.023/h, NAT gateway ≈ US$0.045/h,
+3 public IPv4 addresses (ALB in 2 AZs + NAT Elastic IP) ≈ US$0.015/h, EBS and RDS storage
+≈ US$0.005/h, so **about US$0.13 per hour (about US$95 per month)** plus small data charges.
+Delete everything after collecting evidence (step 10).
 
 ## Architecture summary (matches evidence/architecture.png)
 
