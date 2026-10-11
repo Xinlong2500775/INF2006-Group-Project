@@ -20,12 +20,12 @@ against a private detail only the real owner would know.
 
 | Name | Student ID | Role |
 |---|---|---|
-| Chern De Qian | 2502760 | *(see TEAM_CONTRIBUTIONS.md)* |
-| Teo Siow Min Glenda | 25018130 | Cloud deployment and operations testing |
-| Zhou Xinlong | 2500775 | Backend, security and automated testing |
-| Liew Jia Rong | 2501090 | |
-| Ruan Zhongjiang | 2501780 | |
-| Thiha Thein | 2502266 | |
+| Chern De Qian | 2502760 | Data & AI/ML Lead |
+| Teo Siow Min Glenda | 2501813 | Cloud Infrastructure & Deployment |
+| Zhou Xinlong | 2500775 | Backend / Application Developer |
+| Liew Jia Rong | 2501090 | Architecture, Documentation & Integration |
+| Ruan Zhongjiang | 2501780 | Security Lead |
+| Thiha Thein | 2502266 | Scalability, Resilience & Monitoring |
 
 ## Architecture
 

@@ -3,8 +3,8 @@
 **Project:** Campus Lost & Found, INF2006 Team 10 (G010)
 
 One row per member. Each member owned one area of the brief, the artefacts and evidence files in
-their row, and the matching report section(s). Commits can be traced with
-`git log --author="<name>" --oneline`.
+their row, and the matching report section(s). Not every member committed directly to the repository:
+some members' work was committed by a teammate, so `git log` shows fewer authors than this table.
 
 | Member | Student ID | Role | Artefacts / commits | Test / evidence ownership | Reflection |
 |---|---|---|---|---|---|
