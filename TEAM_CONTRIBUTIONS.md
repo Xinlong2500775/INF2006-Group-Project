@@ -1,6 +1,6 @@
-# Team Contributions
+﻿# Team Contributions
 
-**Project:** Campus Lost & Found, INF2006 Team 10 (G010)
+**Project:** Campus Lost & Found, INF2006 Team 10 (G10)
 
 One row per member. Each member owned one area of the brief, the artefacts and evidence files in
 their row, and the matching report section(s). Commits can be traced with

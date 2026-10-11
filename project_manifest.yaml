@@ -2,7 +2,7 @@
 # All paths are relative to the ZIP root.
 
 project:
-  group_id: "G010"
+  group_id: "G10"
   title: "Campus Lost & Found"
   problem_statement: >-
     SIT has no single place to report or search for lost and found items: finders hand items to
