@@ -12,7 +12,7 @@ project:
     with a match percentage, and submit an ownership claim that Security verifies against a
     private detail before the item is released.
   cloud_provider: "AWS"
-  repository_commit: "82a6aa0c78b45649eeb530c7eb588e1daea5dd9f"
+  repository_commit: "aaa96f75b293876e37e5328a066c289b7734ebf9"
   repository_url: "https://github.com/Xinlong2500775/INF2006-Group-Project"
 
 team:
