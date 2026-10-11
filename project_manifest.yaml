@@ -70,9 +70,9 @@ architecture:
     - name: "/lostfound/httpd"
       type: "CloudWatch Logs log group"
       purpose: "Apache and PHP logs from every instance, 7-day retention"
-    - name: "AWS Budgets cost alert"
+    - name: "My Monthly Cost Budget"
       type: "AWS Budgets"
-      purpose: "Alerts the team by email at 80% of a monthly cost limit"
+      purpose: "US$20 monthly cost budget with a forecast alert; export in evidence/deployment.md"
   deployment_guide: "src/infra/DEPLOYMENT.md"
   deployment_record: "evidence/deployment.md"
 

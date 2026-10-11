@@ -38,8 +38,8 @@ true for them, or adds the tool they used to this table.)*
 
 - INF2006 lab materials: Lab 4/Lab 5 PHP + RDS pattern (connection include file kept outside the
   web root, `mysqli`, EC2 + RDS in a VPC), and the load balancing / auto scaling lab steps.
-- AWS documentation: EC2 Auto Scaling, Elastic Load Balancing, RDS, Systems Manager Parameter
-  Store, CloudWatch (alarms, agent, Logs Insights).
+- AWS documentation: EC2 Auto Scaling, Elastic Load Balancing, RDS,
+  CloudWatch (alarms, agent, Logs Insights).
 - OWASP Top 10 (2021) for threat categories.
 - scikit-learn documentation for `TfidfVectorizer` and `cosine_similarity`.
 

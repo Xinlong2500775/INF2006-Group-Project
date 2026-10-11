@@ -2,7 +2,7 @@
 
 Each threat is mapped to the control that addresses it, where the control lives, and the test
 or evidence that shows it works. Threat categories follow the OWASP Top 10 (2021) where one
-applies. Labels match `evidence/architecture.png` (including its two trust-boundary lines) and `src/infra/`.
+applies. Labels match `evidence/architecture.png` (including its three numbered trust boundaries) and `src/infra/`.
 
 ## Application threats
 

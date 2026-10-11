@@ -21,8 +21,8 @@ against a private detail only the real owner would know.
 | Name | Student ID | Role |
 |---|---|---|
 | Chern De Qian | 2502760 | *(see TEAM_CONTRIBUTIONS.md)* |
-| Teo Siow Min Glenda | 25018130 | |
-| Zhou Xinlong | 2500775 | |
+| Teo Siow Min Glenda | 25018130 | Cloud deployment and operations testing |
+| Zhou Xinlong | 2500775 | Backend, security and automated testing |
 | Liew Jia Rong | 2501090 | |
 | Ruan Zhongjiang | 2501780 | |
 | Thiha Thein | 2502266 | |
