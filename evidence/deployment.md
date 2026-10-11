@@ -6,7 +6,7 @@ are replaced with `<redacted>`. How it was built: `src/infra/DEPLOYMENT.md`.
 | Field | Value |
 |---|---|
 | Date deployed | `10 October 2026` |
-| Deployed by | `Teo Siow Min Glenda` |
+| Deployed by | Teo Siow Min Glenda (AWS console setup and tests), using the launch script and deployment guide by Zhou Xinlong (`src/infra/`) |
 | Region | us-east-1 (AWS Academy Learner Lab) |
 | Repo commit deployed | `1bdf450` |
 | Launch script | `src/infra/user-data.sh` |
