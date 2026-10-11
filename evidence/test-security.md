@@ -4,10 +4,10 @@
 |---|---|
 | **Objective** | Show that no user can see or change another user's reports, matches or claims (report §1.2: **0 successful attempts** when changing item IDs in the URL or in form fields), and that authentication, admin-only access, input validation and secret handling hold against the threats in `evidence/threat-control-map.md`. |
 | **Named threat (main)** | **Insecure direct object reference (IDOR), OWASP A01 Broken Access Control:** a logged-in student edits an `item_id` in the URL or a hidden form field to read or claim someone else's item. |
-| **Date** | Local run: 2026-10-08 19:31 (Windows laptop, XAMPP) · ALB run: 2026-10-11 03:52 SGT, against `http://lostfound-alb-1449062045.us-east-1.elb.amazonaws.com` |
+| **Date** | Local run: 2026-10-08 19:31 (Windows laptop, XAMPP) · ALB run: 2026-10-10 18:49 SGT, against `http://lostfound-alb-1449062045.us-east-1.elb.amazonaws.com` |
 | **Setup** | Same as Test 1. The script creates Student A and Student B; Student B owns a lost report (B_LOST) and a found report (B_FOUND) that Student A then attacks. |
 | **Commands** | `python3 tests/run_tests.py http://<alb-dns-name>` (S01 to S16)<br>`mysql -h <db-host> -u <user> -p inf2006 < tests/check_password_hashes.sql` (S17)<br>`python3 tests/check_secrets.py` (S18) |
-| **Artefacts** | `tests/run_tests.py`, `tests/check_password_hashes.sql`, `tests/check_secrets.py`, `evidence/test-run-local-2026-10-08.txt`, `evidence/test-run-alb-2026-10-11.txt`, `evidence/s17-password-hashes-local-2026-10-08.txt`, `evidence/s18-secrets-scan-2026-10-08.txt` |
+| **Artefacts** | `tests/run_tests.py`, `tests/check_password_hashes.sql`, `tests/check_secrets.py`, `evidence/test-run-local-2026-10-08.txt`, `evidence/test-run-alb-2026-10-10.txt`, `evidence/s17-password-hashes-local-2026-10-08.txt`, `evidence/s18-secrets-scan-2026-10-08.txt` |
 
 ## A. Changing IDs in the URL (target: 0 successful)
 
@@ -52,7 +52,7 @@
 | S17 | `tests/check_password_hashes.sql` | `bcrypt_hashes = total_users`, all hashes 60 characters (`password_hash()`, bcrypt) | PASS: 8 users, 8 bcrypt hashes, all 60 chars |
 | S18 | `tests/check_secrets.py` | "PASS S18": no keys/passwords/RDS endpoints in tracked files; `src/.env` gitignored | PASS: 59 tracked files scanned, no credentials |
 
-## Actual result (local 2026-10-08 and deployed ALB 2026-10-11)
+## Actual result (local 2026-10-08 and deployed ALB 2026-10-10)
 
 | Section | Checks | Passed | Successful attacks |
 |---|---|---|---|
@@ -64,7 +64,7 @@
 | **Total** | **18** | **18** | **0** |
 
 Sections A to D (S01 to S16) passed in both the local run (2026-10-08 19:31) and the run against the
-deployed ALB (2026-10-11 03:52, `evidence/test-run-alb-2026-10-11.txt`). S17 and S18 were run locally:
+deployed ALB (2026-10-10 18:49, `evidence/test-run-alb-2026-10-10.txt`). S17 and S18 were run locally:
 S18 checks the repository, which is what is deployed, and S17 checks the hashing code path, which is
 identical on EC2.
 

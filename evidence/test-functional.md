@@ -3,10 +3,10 @@
 | Field | Value |
 |---|---|
 | **Objective** | Show that every core workflow works end to end without errors on the deployed site (report §1.2: 100% of steps pass, tested through the ALB URL). Covers register, log in, report found, browse, report lost + matches, claim, admin approve/reject and log out. |
-| **Date** | Local run: 2026-10-08 19:31 (Windows laptop, XAMPP: Apache 2.4.58, PHP 8.2, MariaDB 10.4) · ALB run: 2026-10-11 03:52 SGT, against `http://lostfound-alb-1449062045.us-east-1.elb.amazonaws.com` (AWS us-east-1, deployed as in `src/infra/DEPLOYMENT.md`) |
+| **Date** | Local run: 2026-10-08 19:31 (Windows laptop, XAMPP: Apache 2.4.58, PHP 8.2, MariaDB 10.4) · ALB run: 2026-10-10 18:49 SGT, against `http://lostfound-alb-1449062045.us-east-1.elb.amazonaws.com` (AWS us-east-1, deployed as in `src/infra/DEPLOYMENT.md`) |
 | **Setup** | App deployed as in `README.md`. Database loaded from `data/schema.sql` (includes the demo admin). No other data needed: the script registers its own two students (A and B) with unique emails on every run. |
 | **Command** | `python3 tests/run_tests.py http://<alb-dns-name>` (and the same against local XAMPP) |
-| **Artefacts** | `tests/run_tests.py`, `evidence/test-run-local-2026-10-08.txt`, `evidence/test-run-alb-2026-10-11.txt` |
+| **Artefacts** | `tests/run_tests.py`, `evidence/test-run-local-2026-10-08.txt`, `evidence/test-run-alb-2026-10-10.txt` |
 
 ## Steps and expected results
 
@@ -35,14 +35,14 @@
 | Run | Target | Functional steps passed | Log |
 |---|---|---|---|
 | Local, 2026-10-08 19:31 | `http://localhost/INF2006-app/src/public` | **17 / 17** | `evidence/test-run-local-2026-10-08.txt` |
-| **Deployed, 2026-10-11 03:52** | **ALB URL (`lostfound-alb`)** | **17 / 17** | `evidence/test-run-alb-2026-10-11.txt` |
+| **Deployed, 2026-10-10 18:49** | **ALB URL (`lostfound-alb`)** | **17 / 17** | `evidence/test-run-alb-2026-10-10.txt` |
 
 Both logs end with `SUMMARY: 33/33 checks passed, 0 failed` (17 functional + 16 security).
-In F09 the lost bottle was matched to the correct found bottle at **81%** in both runs (locally an
-unrelated item was shown second at 32%), so the ranking behaved as intended on the deployed
-servers, where the matcher runs with Python 3 and scikit-learn installed by `user-data.sh`.
+In F09 the lost bottle was matched to the correct found bottle in both runs (81% locally, with an
+unrelated item shown second at 32%; 79% on the deployed site), so the ranking behaved as intended
+on the EC2 servers, where the matcher runs with Python 3 and scikit-learn installed by `user-data.sh`.
 
-**Target (100% of steps pass through the ALB URL): MET (17/17 on the deployed site, 2026-10-11).**
+**Target (100% of steps pass through the ALB URL): MET (17/17 on the deployed site, 2026-10-10).**
 
 ## Notes
 
