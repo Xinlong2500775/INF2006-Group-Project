@@ -1,5 +1,5 @@
 # Machine-readable summary of the submission (schema: INF2006 Team Project brief, section 8).
-# All paths are relative to the ZIP root. Fields marked TODO must be filled in before submission.
+# All paths are relative to the ZIP root.
 
 project:
   group_id: "G010"
@@ -12,7 +12,7 @@ project:
     with a match percentage, and submit an ownership claim that Security verifies against a
     private detail before the item is released.
   cloud_provider: "AWS"
-  repository_commit: "TODO: final commit hash (git rev-parse HEAD)"
+  repository_commit: "82a6aa0c78b45649eeb530c7eb588e1daea5dd9f"
   repository_url: "https://github.com/Xinlong2500775/INF2006-Group-Project"
 
 team:
