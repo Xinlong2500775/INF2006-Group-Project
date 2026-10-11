@@ -21,7 +21,7 @@ are replaced with `<redacted>`. How it was built: `src/infra/DEPLOYMENT.md`.
 | Database | RDS `lostfound-db` | MySQL, db.t3.micro, private subnets, Publicly accessible = No, backups 1 day |
 | Credentials | Local config file `src/.env` on each instance | Written at boot by the launch template user data, mode 640; no Secrets Manager |
 | Network egress | NAT gateway (1 AZ) | Lets private web servers install packages and pull the repo |
-| Cost | AWS Budgets alert | Monthly limit, alert at 80% |
+| Cost | AWS Budgets: "My Monthly Cost Budget" | Monthly cost budget, limit US$20, with a forecast alert (export below) |
 | Monitoring | CloudWatch alarm `lostfound-unhealthy-alarm` | UnHealthyHostCount ≥ 1, 1 × 1 min |
 
 ## Security group rules (exported, redacted)
@@ -100,3 +100,22 @@ TcpTestSucceeded : False
 
 Result: the RDS endpoint resolves only to a private VPC address and cannot be reached from the
 internet on port 3306. **PASS**
+
+## Cost budget (exported)
+
+```
+$ aws budgets describe-budgets --account-id $(aws sts get-caller-identity --query Account --output text) \
+    --query "Budgets[].{Name:BudgetName,Limit:BudgetLimit.Amount,Actual:CalculatedSpend.ActualSpend.Amount,Forecast:CalculatedSpend.ForecastedSpend.Amount}" \
+    --output table   (CloudShell, 2026-10-11; account ID looked up inside the command, not printed)
++--------+-----------+--------+------------------------+
+| Actual | Forecast  | Limit  |          Name          |
++--------+-----------+--------+------------------------+
+| 11.904 |  32.895   |  20.0  | My Monthly Cost Budget |
++--------+-----------+--------+------------------------+
+```
+
+Result: a US$20 monthly cost budget exists for the account. By 11 October actual spend was US$11.90,
+and AWS forecast US$32.90 for the month, above the limit, so the budget's forecast alert was
+triggered. The alert did its job: it showed that leaving the NAT gateway, ALB and RDS running all
+month would exceed our budget, so these are deleted after assessment. **PASS**
+
